@@ -53,7 +53,7 @@ def check(path):
                 break
 
     # L-02: single slot
-    if 'StaticSet1 134' in txt and 'StaticSet1 141' not in txt:
+    if 'StaticSet1 134' in txt and 'StaticSet1 401' not in txt:
         findings.append(("L-02", txt.index('StaticSet1 134'), "Single-slot queue Static[134] — FIFO 4-slot recommended"))
 
     # L-03: HAS_SCRIPT_LOADED timeout
@@ -164,8 +164,8 @@ def apply(inp, out, backup):
     # Look for "\nPush_-1\nStaticSet1 128\n"
     marker = "Push_-1\nStaticSet1 128\n"
     if marker in newtxt:
-        newtxt = newtxt.replace(marker, marker + "Push_1\nStaticSet1 150\n; vNext feature flag: 1=use FIFO queue\n", 1)
-        print("Patched Static[150]=1 feature flag into Label_0 init")
+        newtxt = newtxt.replace(marker, marker + "Push_1\nStaticSet1 402\n; vNext feature flag: 1=use FIFO queue (Static1[402] free; do NOT use 150 - v1 help-bar flag)\n", 1)
+        print("Patched Static[402]=1 feature flag into Label_0 init")
 
     # Now we need to make Label_3 call Label_5_v2 when flag set
     # In Label_3: "Call @Label_5" -> we add conditional
@@ -173,10 +173,10 @@ def apply(inp, out, backup):
     # Simpler: replace Call @Label_5 with check:
     old = "Call @Label_5\nCall @Label_6"
     if old in newtxt:
-        new = "StaticGet1 150\nJumpFalse @L_upg_use_v1queue\nCall @Label_5_v2\nJump @L_upg_after_queue\n:Label_upg_use_v1queue\nCall @Label_5\n:Label_upg_after_queue\nCall @Label_6"
+        new = "StaticGet1 402\nJumpFalse @Label_upg_use_v1queue\nCall @Label_5_v2\nJump @Label_upg_after_queue\n:Label_upg_use_v1queue\nCall @Label_5\n:Label_upg_after_queue\nCall @Label_6"
         # Need to ensure we have Jump logic — CSA allows JumpFalse
         newtxt = newtxt.replace(old, new, 1)
-        print("Patched Label_3 to dispatch to Label_5_v2 when Static[150]==1")
+        print("Patched Label_3 to dispatch to Label_5_v2 when Static[402]==1")
 
     # preserve CRLF if original had it
     try:
@@ -188,7 +188,7 @@ def apply(inp, out, backup):
         newtxt = newtxt.replace('\n', '\r\n')
     opath.write_bytes(newtxt.encode('utf-8'))
     print(f"\n✅ Wrote {opath} ({len(newtxt.encode('utf-8'))//1024} KB, +{len(newtxt.encode('utf-8'))-len(txt.encode('utf-8'))} bytes)")
-    print(f"   — v2 loader injected, flag Static[150]=1, queue 4 slots at Static2 434/438")
+    print(f"   — v2 loader injected, flag Static[402]=1, head/tail Static1[400/401], 4 slots at Static2 434/438")
     print(f"   — Keep original 87× Call @Label_1835 as-is for rollback; new entries should use Call @Label_1835_v2 (8 params)")
 
     # Also write a report of call sites

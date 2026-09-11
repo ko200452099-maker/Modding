@@ -1,5 +1,8 @@
 # Naming Map — Statics (Numbers → Correct Names)
 
+> ⚠️ **2026-09-11 audit:** several curated names were found WRONG by code reading — corrected in `tools/rename_map.json`. Notably: `S1[141/142]` are **toggle bitfields** (not queue head/tail), `S1[150]` is the **help-bar frame flag** (not free), `S1[82]` is `gTheme_FontUnselected` (not a color id), `S2[357]` is `gLang_Spanish` (was inverted), `S1[28/29]` = saved page/selection, `S1[214]` = row counter, `S1[224]` = row **Y**. Verdicts + evidence: **`docs/LOADER_AUDIT_VERIFIED.md`**.
+
+
 > 512 Static1 + 600 Static2 slots. Only ~180 used — rest `gUnk_*` reserved.  
 > Curated from `Label_0` init (27 fixed), `ModLoader_Statics.c` (27), usage counts, and cross-ref with natives.
 

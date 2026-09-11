@@ -9,18 +9,19 @@ Usage:
 """
 import json, re, pathlib, argparse
 
-MAP = pathlib.Path('/home/user/Modding/tools/rename_map.json')
-if not MAP.exists():
-    MAP = pathlib.Path('tools/rename_map.json')
+def load_map(mp):
+    MAP = pathlib.Path(mp)
+    if not MAP.exists():
+        MAP = pathlib.Path('tools') / pathlib.Path(mp).name
+    with open(MAP, encoding='utf-8') as f:
+        data=json.load(f)
+    return data['labels'], data['statics1'], data['statics2']
 
-with open(MAP, encoding='utf-8') as f:
-    data=json.load(f)
-labels=data['labels']
-s1=data['statics1']
-s2=data['statics2']
+labels, s1, s2 = {}, {}, {}   # populated in main via load_map()
 
 # Build reverse for statics already
 def annotate(inp, out):
+    global labels, s1, s2
     txt=pathlib.Path(inp).read_bytes().decode('utf-8', errors='replace').replace('\r\n','\n').splitlines()
     out_lines=[]
     for line in txt:
@@ -75,10 +76,11 @@ def annotate(inp, out):
             continue
         out_lines.append(line)
     # write preserving CRLF
-    pathlib.Path(out).write_text('\r\n'.join(out_lines)+'\r\n', encoding='utf-8')
+    pathlib.Path(out).write_text('\r\n'.join(out_lines), encoding='utf-8')
     print(f"Annotated {inp} -> {out} ({len(out_lines)} lines)")
 
 def rename(inp, out):
+    global labels, s1, s2
     txt=pathlib.Path(inp).read_bytes().decode('utf-8', errors='replace')
     # Use CRLF preservation
     has_crlf='\r\n' in txt
@@ -100,7 +102,9 @@ if __name__=='__main__':
     ap.add_argument('--out', dest='out', default='ModLoader_Annotated.csa')
     ap.add_argument('--annotated', action='store_true')
     ap.add_argument('--rename', action='store_true')
+    ap.add_argument('--map', dest='mapfile', default='tools/rename_map.json')
     args=ap.parse_args()
+    labels, s1, s2 = load_map(args.mapfile)
     if args.rename:
         rename(args.inp, args.out)
     else:
