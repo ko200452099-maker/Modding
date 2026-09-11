@@ -1,0 +1,222 @@
+; ModLoader Loader v2 Reference — drop-in after :Label_426 (line ~5606)
+; Replaces Label_1835 (v1) with FIFO, validation, toasts. Keep v1 for rollback.
+; Assembles with any CSA toolkit (GLA/Zan). Requires Statics 141=queueHead,142=queueTail,150=featureFlag
+; Also needs Static2 434..437 = queueScript[4], 438..441 = queueStack[4], 450=startTime
+; See docs/LOADER_DEEPDIVE_V2.md for spec.
+
+:Label_1835_v2
+Function 8 10 0
+  ; ---- stack validate: 128..8192, align to 128 ----
+  getF1 2
+  Push 128
+  JumpGE @L_v2_stack_lo_ok
+  Push 1024
+  setF1 2
+  Jump @L_v2_stack_ok
+:L_v2_stack_lo_ok
+  getF1 2
+  Push 8192
+  JumpLE @L_v2_stack_hi_ok
+  Push 8192
+  setF1 2
+  Jump @L_v2_stack_ok
+:L_v2_stack_hi_ok
+  getF1 2
+  Push 128
+  Mod
+  Push_0
+  JumpEQ @L_v2_stack_ok
+  getF1 2
+  Push 128
+  Div
+  Push 128
+  Mult
+  setF1 2
+:L_v2_stack_ok
+
+  ; ---- does file exist? larger buffer ----
+  getF1 1
+  CallNative "DOES_SCRIPT_EXIST" 1 1
+  JumpTrue @L_v2_draw
+  getF1 1
+  pFrame1 8
+  StrCopy 128
+  PushString ".csc Not Found! Check /scripts/"
+  pFrame1 8
+  StrAdd 128
+  pFrame1 8
+  Push_0
+  Call @Label_546
+  PushString "HUD_FRONTEND_DEFAULT_SOUNDSET"
+  PushString "ERROR"
+  CallNative "PLAY_SOUND_FRONTEND" 3 0
+  Jump @L_v2_return
+
+:L_v2_draw
+  getF1 0
+  getF1 5
+  Call @Label_396
+  getF1 3
+  getF1 4
+  Call @Label_427
+  getF1 1
+  CallNative "GET_HASH_KEY" 1 1
+  CallNative "GET_NUMBER_OF_THREADS_RUNNING_THE_SCRIPT_WITH_THIS_HASH" 1 1
+  Push_0
+  CmpNe
+  Call @Label_418
+  Call @Label_397
+  JumpFalse @L_v2_return
+  getF1 1
+  CallNative "GET_HASH_KEY" 1 1
+  CallNative "GET_NUMBER_OF_THREADS_RUNNING_THE_SCRIPT_WITH_THIS_HASH" 1 1
+  JumpFalse @L_v2_queue
+  ; already running -> optional version gate
+  getF1 6
+  Push_0
+  JumpEQ @L_v2_terminate
+  ; TODO version compare: if stored version < getF1 6 show "Update available"
+:L_v2_terminate
+  getF1 1
+  CallNative "TERMINATE_ALL_SCRIPTS_WITH_THIS_NAME" 1 0
+  PushString "Stopped"
+  getF1 0
+  pFrame1 9
+  StrCopy 64
+  PushString ": "
+  pFrame1 9
+  StrAdd 64
+  getF1 0
+  pFrame1 9
+  StrAdd 64
+  pFrame1 9
+  Push_0
+  Call @Label_546
+  Jump @L_v2_return
+
+:L_v2_queue
+  StaticGet1 141
+  StaticGet1 142
+  Sub
+  Push 4
+  JumpLT @L_v2_not_full
+  ; queue full check with wrap
+  StaticGet1 142
+  StaticGet1 141
+  Sub
+  Abs
+  Push 4
+  JumpLT @L_v2_not_full
+  PushString "Queue full! Wait..."
+  Push_0
+  Call @Label_546
+  Jump @L_v2_return
+:L_v2_not_full
+  getF1 1
+  StaticGet1 142
+  Push 4
+  Mod
+  pStatic2 434
+  ArraySet1 1
+  getF1 2
+  StaticGet1 142
+  Push 4
+  Mod
+  pStatic2 438
+  ArraySet1 1
+  getF1 6
+  StaticGet1 142
+  Push 4
+  Mod
+  pStatic2 442
+  ArraySet1 1
+  StaticGet1 142
+  Push_1
+  Add
+  Push 4
+  Mod
+  StaticSet1 142
+  getF1 7
+  Push 1
+  And
+  JumpFalse @L_v2_return
+  PushString "Queued: "
+  getF1 0
+  pFrame1 9
+  StrCopy 64
+  PushString ""
+  pFrame1 9
+  StrAdd 64
+  pFrame1 9
+  Push_0
+  Call @Label_546
+:L_v2_return
+  Return 8 0
+
+; ---- Label_5 v2: FIFO consumer with timeout ----
+:Label_5_v2
+Function 0 2 0
+  StaticGet1 141
+  StaticGet1 142
+  JumpEQ @L5v2_idle
+  ; dequeue head -> pending
+  StaticGet1 141
+  Push 4
+  Mod
+  pStatic2 434
+  ArrayGet 1
+  StaticSet1 134
+  StaticGet1 141
+  Push 4
+  Mod
+  pStatic2 438
+  ArrayGet 1
+  StaticSet1 136
+  StaticGet1 134
+  CallNative "REQUEST_SCRIPT" 1 0
+  CallNative "GET_GAME_TIMER" 0 1
+  StaticSet2 450
+:L5v2_wait
+  StaticGet1 134
+  CallNative "HAS_SCRIPT_LOADED" 1 1
+  JumpTrue @L5v2_start
+  CallNative "GET_GAME_TIMER" 0 1
+  StaticGet2 450
+  Sub
+  Push 3000
+  JumpLT @L5v2_continue
+  PushString "Load timeout: "
+  StaticGet1 134
+  pFrame1 8
+  StrCopy 64
+  PushString ""
+  pFrame1 8
+  StrAdd 64
+  pFrame1 8
+  Push_0
+  Call @Label_546
+  Jump @L5v2_advance
+:L5v2_continue
+  Push_0
+  CallNative "WAIT" 1 0
+  Jump @L5v2_wait
+:L5v2_start
+  StaticGet1 134
+  StaticGet1 136
+  CallNative "START_NEW_SCRIPT" 2 1
+  Drop
+  StaticGet1 134
+  CallNative "SET_SCRIPT_AS_NO_LONGER_NEEDED" 1 0
+:L5v2_advance
+  StaticGet1 141
+  Push_1
+  Add
+  Push 4
+  Mod
+  StaticSet1 141
+  Push_0
+  StaticSet1 134
+  Push_0
+  StaticSet1 136
+:L5v2_idle
+  Return 0 0
