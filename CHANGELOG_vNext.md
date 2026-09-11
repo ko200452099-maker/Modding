@@ -1,5 +1,11 @@
 # ModLoader vNext (2.0) — Changelog & Migration
 
+> ⛔ **ERRATA (2026-09-11, name audit — see `docs/LOADER_AUDIT_VERIFIED.md` for evidence):**
+> 1. **Dead jump refs fixed:** dispatch jumped to `@L_upg_use_v1queue` / `@L_upg_after_queue` but labels were `:Label_upg_…` — would not assemble. Fixed in `ModLoader_vNext.csa` + `tools/upgrade_loader.py`.
+> 2. **FIFO head/tail moved `Static1[141/142]` → `Static1[400/401]`:** v1 already uses 141/142 as **toggle bitfields** (21 bit-ops on 142 alone — vehicle options etc.). Enqueueing would have corrupted toggles and vice-versa.
+> 3. **Feature flag moved `Static1[150]` → `Static1[402]`:** v1 uses 150 as the help-bar per-frame flag (set by pages, cleared every frame) — it would have flipped dispatch mid-game.
+> 4. v2 FIFO actually also stores `queue_version[0..3]` at `Static2[442..445]` (was undocumented). All slots verified 100 % free in v1.
+
 **Branch:** `arena/01a08a4d-modding` → PR #1  
 **Previous:** `ModLoader.csa` (Tomás original, 29,937 lines)  
 **Next:** `ModLoader_vNext.csa` (30,174 lines, +4 KB, CRLF preserved)

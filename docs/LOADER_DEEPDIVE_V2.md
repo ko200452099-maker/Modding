@@ -1,5 +1,12 @@
 # Loader Deep Dive — `Label_1835` → Preparing **ModLoader vNext (2.0 Update)**
 
+> ⚠️ **Superseded details (2026-09-11 audit):** this design doc predates the verified name audit.
+> Corrections: FIFO head/tail are **S1[400/401]** (not 141/142 — those are v1 toggle bitfields), feature flag is **S1[402]**
+> (not 150 — that's the help-bar frame flag), queue arrays also use S2[442..445] for versions, and the dispatch
+> `@L_upg_*` refs were fixed. Also: `Label_423` is the script-**EXISTS** branch (not "NotFound"), `Label_424` is the
+> **non-PS3** suffix, and controls **202/203 SUPPRESS** confirm in `Label_397` (not an R1+L1 combo).
+> Authoritative doc: **`docs/LOADER_AUDIT_VERIFIED.md`**. Everything else below remains accurate.
+
 > **Status:** Design doc for the upcoming update.  
 > **Source:** `ModLoader.csa:5557-5606` (Function 6 19 0) + deps `Label_397`, `Label_418`, `Label_427`, `Label_396`, `Label_5` queue (`Static[134]/[136]`).  
 > **Date:** 2026-09-10  (Africa/Tripoli, 09:51 UTC)

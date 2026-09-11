@@ -1,6 +1,6 @@
 ; ModLoader Loader v2 Reference — drop-in after :Label_426 (line ~5606)
 ; Replaces Label_1835 (v1) with FIFO, validation, toasts. Keep v1 for rollback.
-; Assembles with any CSA toolkit (GLA/Zan). Requires Statics 141=queueHead,142=queueTail,150=featureFlag
+; Assembles with any CSA toolkit (GLA/Zan). Requires FREE Statics 400=queueHead,401=queueTail,402=featureFlag (v1 uses 141/142 as toggle bitfields and 150 as help-bar frame flag — do NOT reuse!)
 ; Also needs Static2 434..437 = queueScript[4], 438..441 = queueStack[4], 450=startTime
 ; See docs/LOADER_DEEPDIVE_V2.md for spec.
 
@@ -95,14 +95,14 @@ Function 8 10 0
   Jump @L_v2_return
 
 :L_v2_queue
-  StaticGet1 141
-  StaticGet1 142
+  StaticGet1 400
+  StaticGet1 401
   Sub
   Push 4
   JumpLT @L_v2_not_full
   ; queue full check with wrap
-  StaticGet1 142
-  StaticGet1 141
+  StaticGet1 401
+  StaticGet1 400
   Sub
   Abs
   Push 4
@@ -113,29 +113,29 @@ Function 8 10 0
   Jump @L_v2_return
 :L_v2_not_full
   getF1 1
-  StaticGet1 142
+  StaticGet1 401
   Push 4
   Mod
   pStatic2 434
   ArraySet1 1
   getF1 2
-  StaticGet1 142
+  StaticGet1 401
   Push 4
   Mod
   pStatic2 438
   ArraySet1 1
   getF1 6
-  StaticGet1 142
+  StaticGet1 401
   Push 4
   Mod
   pStatic2 442
   ArraySet1 1
-  StaticGet1 142
+  StaticGet1 401
   Push_1
   Add
   Push 4
   Mod
-  StaticSet1 142
+  StaticSet1 401
   getF1 7
   Push 1
   And
@@ -156,17 +156,17 @@ Function 8 10 0
 ; ---- Label_5 v2: FIFO consumer with timeout ----
 :Label_5_v2
 Function 0 2 0
-  StaticGet1 141
-  StaticGet1 142
+  StaticGet1 400
+  StaticGet1 401
   JumpEQ @L5v2_idle
   ; dequeue head -> pending
-  StaticGet1 141
+  StaticGet1 400
   Push 4
   Mod
   pStatic2 434
   ArrayGet 1
   StaticSet1 134
-  StaticGet1 141
+  StaticGet1 400
   Push 4
   Mod
   pStatic2 438
@@ -208,12 +208,12 @@ Function 0 2 0
   StaticGet1 134
   CallNative "SET_SCRIPT_AS_NO_LONGER_NEEDED" 1 0
 :L5v2_advance
-  StaticGet1 141
+  StaticGet1 400
   Push_1
   Add
   Push 4
   Mod
-  StaticSet1 141
+  StaticSet1 400
   Push_0
   StaticSet1 134
   Push_0
